@@ -12,8 +12,8 @@ st.set_page_config(page_title="Gestão & Data Science - Sondagem Mineral", layou
 
 # CONEXÃO COM SUPABASE
 # Substitua pelas suas chaves encontradas em: Project Settings > API
-SUPABASE_URL = https://lvcvbeariojlzulgkgjm.supabase.co
-SUPABASE_KEY = sb_publishable_YCteHln3tn1T0-lJpyYPEw_kLuePgxx
+SUPABASE_URL = "https://lvcvbeariojlzulgkgjm.supabase.co"
+SUPABASE_KEY = "sb_publishable_YCteHln3tn1T0-lJpyYPEw_kLuePgxx"
 
 @st.cache_resource
 def init_connection():
