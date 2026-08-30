@@ -103,22 +103,27 @@ else:
 
             btn_salvar_furo = st.form_submit_button("💾 Salvar Furo")
 
-            if btn_salvar_furo:
-                dados_collar = {
-                    "hole_id": hole_id,
-                    "projeto": projeto,
-                    "alvo": alvo,
-                    "utm_easting": utm_x,
-                    "utm_northing": utm_y,
-                    "elevation": elevation,
-                    "azimuth": azimuth,
-                    "dip": dip,
-                    "profundidade_final": prof_final,
-                }
-                supabase.table("furos_sondagem").insert(dados_collar).execute()
-                st.success(
-                    f"Furo {hole_id} registrado por {st.session_state.usuario_nome}!"
-                )
+           if btn_salvar_furo:
+    dados_collar = {
+        "hole_id": hole_id.strip(),
+        "projeto": projeto.strip(),
+        "alvo": alvo.strip(),
+        "utm_easting": float(utm_x),
+        "utm_northing": float(utm_y),
+        "elevation": float(elevation),
+        "azimuth": float(azimuth),
+        "dip": float(dip),
+        "profundidade_final": float(prof_final),
+    }
+
+    try:
+        supabase.table("furos_sondagem").insert(dados_collar).execute()
+        st.success(
+            f"Furo {hole_id} registrado com sucesso por"
+            f" {st.session_state.usuario_nome}!"
+        )
+    except Exception as e:
+        st.error(f"Erro ao salvar no Supabase: {e}")
 
     # --- MENU 2: DESCRIÇÃO LITOLÓGICA ---
     elif menu == "🪵 Campo: Log Litológico/Ensaios":
