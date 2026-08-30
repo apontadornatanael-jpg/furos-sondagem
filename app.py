@@ -32,25 +32,27 @@ if not st.session_state.logado:
 
         if btn_entrar:
             if email_input:
-                # Verifica se o e-mail consta na tabela de autorizados
-                res = (
-                    supabase.table("usuarios_autorizados")
-                    .select("*")
-                    .eq("email", email_input.strip().lower())
-                    .execute()
-                )
+                try:
+                    res = (
+                        supabase.table("usuarios_autorizados")
+                        .select("*")
+                        .eq("email", email_input.strip().lower())
+                        .execute()
+                    )
 
-                if res.data:
-                    st.session_state.logado = True
-                    st.session_state.usuario_nome = res.data[0]["nome"]
-                    st.success(
-                        f"Bem-vindo(a), {st.session_state.usuario_nome}!"
-                    )
-                    st.rerun()
-                else:
-                    st.error(
-                        "Acesso negado. E-mail não cadastrado na equipe autorizada."
-                    )
+                    if res.data:
+                        st.session_state.logado = True
+                        st.session_state.usuario_nome = res.data[0]["nome"]
+                        st.success(
+                            f"Bem-vindo(a), {st.session_state.usuario_nome}!"
+                        )
+                        st.rerun()
+                    else:
+                        st.error(
+                            "Acesso negado. E-mail não cadastrado na equipe autorizada."
+                        )
+                except Exception as e:
+                    st.error(f"Erro na verificação de acesso: {e}")
             else:
                 st.warning("Por favor, preencha o campo de e-mail.")
 
@@ -103,39 +105,44 @@ else:
 
             btn_salvar_furo = st.form_submit_button("💾 Salvar Furo")
 
-           if btn_salvar_furo:
-    dados_collar = {
-        "hole_id": hole_id.strip(),
-        "projeto": projeto.strip(),
-        "alvo": alvo.strip(),
-        "utm_easting": float(utm_x),
-        "utm_northing": float(utm_y),
-        "elevation": float(elevation),
-        "azimuth": float(azimuth),
-        "dip": float(dip),
-        "profundidade_final": float(prof_final),
-    }
+            if btn_salvar_furo:
+                dados_collar = {
+                    "hole_id": hole_id.strip(),
+                    "projeto": projeto.strip(),
+                    "alvo": alvo.strip(),
+                    "utm_easting": float(utm_x),
+                    "utm_northing": float(utm_y),
+                    "elevation": float(elevation),
+                    "azimuth": float(azimuth),
+                    "dip": float(dip),
+                    "profundidade_final": float(prof_final),
+                }
 
-    try:
-        supabase.table("furos_sondagem").insert(dados_collar).execute()
-        st.success(
-            f"Furo {hole_id} registrado com sucesso por"
-            f" {st.session_state.usuario_nome}!"
-        )
-    except Exception as e:
-        st.error(f"Erro ao salvar no Supabase: {e}")
+                try:
+                    supabase.table("furos_sondagem").insert(
+                        dados_collar
+                    ).execute()
+                    st.success(
+                        f"Furo {hole_id} registrado por {st.session_state.usuario_nome}!"
+                    )
+                except Exception as e:
+                    st.error(f"Erro ao salvar furo no Supabase: {e}")
 
     # --- MENU 2: DESCRIÇÃO LITOLÓGICA ---
     elif menu == "🪵 Campo: Log Litológico/Ensaios":
         st.subheader("2. Descrição Litológica e Ensaio por Intervalo")
-        furos_resp = (
-            supabase.table("furos_sondagem").select("hole_id").execute()
-        )
-        lista_furos = (
-            [item["hole_id"] for item in furos_resp.data]
-            if furos_resp.data
-            else []
-        )
+        try:
+            furos_resp = (
+                supabase.table("furos_sondagem").select("hole_id").execute()
+            )
+            lista_furos = (
+                [item["hole_id"] for item in furos_resp.data]
+                if furos_resp.data
+                else []
+            )
+        except Exception as e:
+            lista_furos = []
+            st.error(f"Erro ao carregar lista de furos: {e}")
 
         if not lista_furos:
             st.warning(
@@ -176,19 +183,23 @@ else:
                 if btn_salvar_intervalo:
                     dados_intervalo = {
                         "hole_id": furo_selecionado,
-                        "from_m": from_m,
-                        "to_m": to_m,
-                        "recuperacao_pct": recuperacao,
-                        "litologia": litologia,
-                        "alteracao_hidrotermal": alteracao,
-                        "mineralizacao": mineralizacao,
-                        "teor_principal": teor,
-                        "observacoes": obs,
+                        "from_m": float(from_m),
+                        "to_m": float(to_m),
+                        "recuperacao_pct": float(recuperacao),
+                        "litologia": litologia.strip(),
+                        "alteracao_hidrotermal": alteracao.strip(),
+                        "mineralizacao": mineralizacao.strip(),
+                        "teor_principal": float(teor),
+                        "observacoes": obs.strip(),
                     }
-                    supabase.table("ensaios_intervalos").insert(
-                        dados_intervalo
-                    ).execute()
-                    st.success("Intervalo adicionado!")
+
+                    try:
+                        supabase.table("ensaios_intervalos").insert(
+                            dados_intervalo
+                        ).execute()
+                        st.success("Intervalo adicionado com sucesso!")
+                    except Exception as e:
+                        st.error(f"Erro ao salvar intervalo: {e}")
 
     # --- MENU 3: DATA SCIENCE & VISUALIZAÇÃO 3D ---
     elif menu == "📊 Painel Data Science em Tempo Real":
@@ -197,20 +208,23 @@ else:
         if st.button("🔄 Atualizar Dados"):
             st.rerun()
 
-        # Buscar dados do Supabase
-        df_collar = pd.DataFrame(
-            supabase.table("furos_sondagem").select("*").execute().data
-        )
-        df_intervalos = pd.DataFrame(
-            supabase.table("ensaios_intervalos").select("*").execute().data
-        )
+        try:
+            df_collar = pd.DataFrame(
+                supabase.table("furos_sondagem").select("*").execute().data
+            )
+            df_intervalos = pd.DataFrame(
+                supabase.table("ensaios_intervalos").select("*").execute().data
+            )
+        except Exception as e:
+            st.error(f"Erro ao buscar dados do banco: {e}")
+            df_collar = pd.DataFrame()
+            df_intervalos = pd.DataFrame()
 
         if df_collar.empty:
             st.info(
                 "Aguardando inserção de furos (Collar) pela equipe autorizada."
             )
         else:
-            # Unificação dos dados para cálculo de coordenadas Z por intervalo
             if not df_intervalos.empty:
                 df_completo = pd.merge(
                     df_intervalos, df_collar, on="hole_id", how="left"
@@ -225,7 +239,6 @@ else:
                 df_completo = df_collar.copy()
                 df_completo["utm_z_calc"] = df_completo["elevation"]
 
-            # KPIs Globais
             col_kpi1, col_kpi2, col_kpi3 = st.columns(3)
             col_kpi1.metric("Total de Furos", len(df_collar))
             if not df_intervalos.empty:
@@ -239,8 +252,6 @@ else:
                 )
 
             st.markdown("---")
-
-            # --- VISUALIZAÇÃO 3D ESPACIAL ---
             st.write("### 🌐 Visualização Espacial 3D dos Furos (UTM)")
 
             if not df_intervalos.empty:
@@ -295,9 +306,7 @@ else:
                     ),
                 )
                 st.plotly_chart(fig_3d, use_container_width=True)
-
             else:
-                # Caso existam apenas furos cadastrados sem intervalos litológicos
                 fig_3d = px.scatter_3d(
                     df_collar,
                     x="utm_easting",
